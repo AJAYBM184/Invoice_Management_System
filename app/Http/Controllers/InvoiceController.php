@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Invoice;
 use App\Mail\SendInvoice;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 class InvoiceController extends Controller
 {
@@ -89,6 +90,7 @@ public function edit($id){
     $invoice = Invoice::findOrFail(decrypt($id));
     return view('admin.edit_invoice', compact('invoice'));
 }
+
 public function update(Request $request, $id)
 {
     $request->validate([
@@ -105,17 +107,17 @@ public function update(Request $request, $id)
         'file_path' => 'nullable|file|mimes:jpg,png,pdf|max:3072',
     ]);
 
-   
     $invoice = Invoice::findOrFail($id);
 
-   
     if ($request->hasFile('file_path')) {
-     
+       
+        Storage::delete($invoice->file_path);
+
         $filePath = $request->file('file_path')->store('invoices');
+
         $invoice->file_path = $filePath;
     }
 
-   
     $invoice->qty = $request->qty;
     $invoice->product_name = $request->product_name;
     $invoice->amount = $request->amount;
@@ -129,11 +131,10 @@ public function update(Request $request, $id)
 
     $invoice->save();
 
-    $recipientEmail = $invoice->customer_email;
-    Mail::to($recipientEmail)->send(new InvoiceMail($invoice));
 
     return redirect()->route('admin.dashboard.invoice')->with('success', 'Invoice updated successfully.');
 }
+
 
 
 
